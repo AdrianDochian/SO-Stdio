@@ -6,8 +6,6 @@
 #include <fcntl.h>
 #include <string.h>
 
-//#define MODE 0666
-
 typedef struct _so_file {
 	int fileDescriptor;
 } SO_FILE;
