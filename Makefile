@@ -2,8 +2,11 @@ CC = gcc
 CFLAGS = -Wall -g
 LDFLAGS = -L .
 
-all: libso_stdio.so
+all: checker-lin/libso_stdio.so
 	mv libso_stdio.so ../checker_lin
+
+move_library: libso_stdio.so
+	mv ./libso_stdio.so checker-lin
 
 libso_stdio.so: so_stdio.o
 	$(CC) -shared -o $@ $^
@@ -15,4 +18,4 @@ run: main
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.  ./main
 
 clean:
-	rm -f *.o *.so main
+	rm -f *.o *.so src/*.gch
