@@ -6,8 +6,13 @@
 #include <fcntl.h>
 #include <string.h>
 
+#define BUFF_SIZE 4096
+
 typedef struct _so_file {
-	int fileDescriptor;
+	int file_descriptor;
+	int buffer_position;
+	int buffer_actual_length;
+	char *buffer;
 } SO_FILE;
 
 SO_FILE *so_fopen(const char *pathname, const char *mode)
@@ -33,14 +38,18 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 		return NULL;
 	}
 
-	stream->fileDescriptor = fd;
+	stream->file_descriptor = fd;
+	stream->buffer_position = 0;
+	stream->buffer_actual_length = 0;
+	stream->buffer = calloc(BUFF_SIZE, sizeof(char));
 
 	return stream;
 }
 
 int so_fclose(SO_FILE *stream)
 {
-	close(stream->fileDescriptor);
+	free(stream->buffer);
+	close(stream->file_descriptor);
 	free(stream);
 	return 0;
 }
@@ -76,7 +85,19 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 
 int so_fgetc(SO_FILE *stream)
 {
-	return -1;
+	if (stream == NULL)
+		return SO_EOF;
+
+	if (stream->buffer_position < stream->buffer_actual_length)
+		return stream->buffer[stream->buffer_position++];
+
+	int count = read(stream->file_descriptor, stream->buffer, BUFF_SIZE);
+
+	if (count < 0)
+		return SO_EOF;
+
+	stream->buffer_actual_length += count;
+	return stream->buffer[stream->buffer_position++];
 }
 int so_fputc(int c, SO_FILE *stream)
 {
@@ -104,5 +125,5 @@ int so_pclose(SO_FILE *stream)
 
 int so_fileno(SO_FILE *stream)
 {
-	return -1;
+	return stream->file_descriptor;
 }
