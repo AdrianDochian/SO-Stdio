@@ -72,8 +72,35 @@ long so_ftell(SO_FILE *stream)
 
 size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 {
-	size_t result = -1;
-	return result;
+	if (stream == NULL)
+		return SO_EOF;
+
+	int remaining_bytes_to_be_write = size * nmemb;
+	int index_of_write = 0;
+	int count;
+
+	while (remaining_bytes_to_be_write > 0) {
+		// check if buffer is empty and fill it if it's the case
+		if (stream->buffer_position == stream->buffer_actual_length) {
+			count = read(stream->file_descriptor, stream->buffer, BUFF_SIZE);
+			stream->buffer_position = 0;
+			stream->buffer_actual_length = count;
+			if (count < 0)
+				return SO_EOF;
+			continue;
+		}
+
+		int left_in_buffer = stream->buffer_actual_length - stream->buffer_position;
+		int bytes_to_be_write_now = left_in_buffer < remaining_bytes_to_be_write
+			? left_in_buffer
+			: remaining_bytes_to_be_write;
+
+		memcpy(ptr + index_of_write, stream->buffer + stream->buffer_position, bytes_to_be_write_now);
+		stream->buffer_position += bytes_to_be_write_now;
+		index_of_write += bytes_to_be_write_now;
+		remaining_bytes_to_be_write -= bytes_to_be_write_now;
+	}
+	return index_of_write / size;
 }
 
 size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
@@ -96,7 +123,9 @@ int so_fgetc(SO_FILE *stream)
 	if (count < 0)
 		return SO_EOF;
 
-	stream->buffer_actual_length += count;
+	stream->buffer_position = 0;
+	stream->buffer_actual_length = count;
+
 	return stream->buffer[stream->buffer_position++];
 }
 int so_fputc(int c, SO_FILE *stream)
