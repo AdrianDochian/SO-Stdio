@@ -17,5 +17,8 @@ so_stdio.o: src/so_stdio.c src/so_stdio.h
 run: main
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.  ./main
 
+pack:
+	zip -r DochianAlexandruAdrian335CC src Makefile README
+
 clean:
 	rm -f *.o *.so src/*.gch
