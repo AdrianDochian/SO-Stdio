@@ -86,8 +86,10 @@ int so_fflush(SO_FILE *stream)
 
 		while (to_be_write > 0) {
 			count = write(stream->file_descriptor, stream->buffer + index_of_write, to_be_write);
-			if (count < 0)
-				break;
+			if (count < 0) {
+				stream->eof = EOF;
+				return SO_EOF;
+			}
 
 			to_be_write -= count;
 			index_of_write += count;
@@ -112,9 +114,11 @@ int so_fseek(SO_FILE *stream, long offset, int whence)
 	if (stream->last_operation == WRITE)
 		so_fflush(stream);
 
-	stream->position_in_file = lseek(stream->file_descriptor, offset, whence);
-
-	return 0;
+	if (whence == SEEK_SET || whence == SEEK_CUR || whence == SEEK_END) {
+		stream->position_in_file = lseek(stream->file_descriptor, offset, whence);
+		return 0;
+	}
+	return SO_EOF;
 }
 
 long so_ftell(SO_FILE *stream)
